@@ -300,7 +300,7 @@ prepSeurat2 <- function (object, e2s = NULL, species = NULL, resolution= NULL, s
   data.reprocessed <- F
 
 
-  if (object@version < 4){
+  if (object@version < "4"){
 
     if (("integrated" %in% all.assays) & ("NormalizeData.RNA" %in% all.commands) & ("ScaleData.RNA" %in% all.commands)){
       miko_message("Ensuring correct assays are set...")
