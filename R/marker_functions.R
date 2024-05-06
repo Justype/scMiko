@@ -265,7 +265,9 @@ findCDIMarkers <- function(object, features.x = NULL, features.y = rownames(obje
 
   split_tibble <- function(tibble, col = 'col') tibble %>% split(., .[, col])
 
-  emat.sparse <- Matrix::t( SeuratObject::as.sparse(emat))
+  # (converted from warning) 'as(<lgCMatrix>, "dgCMatrix")' is deprecated. Seurat 4.0.4
+  # emat.sparse <- Matrix::t( SeuratObject::as.sparse(emat))
+  emat.sparse <- Matrix::t(as(emat, "dMatrix"))
   which.cells2 <- as.data.frame(nonzero(x = emat.sparse))
   which.cells2$gene <- rownames(emat)[which.cells2$col]
   which.cells2 <- as_tibble(which.cells2)
