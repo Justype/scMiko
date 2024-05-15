@@ -17,69 +17,77 @@
 #' @return list containing Seurat Object and named gene vector.
 #'
 loadCellRanger <- function(import_set, input_organisms, dir = "") {
-
+  
   import_set_path <- paste(dir, import_set, sep ="")
-
+  
   # import cell ranger-processed data
   expression_matrix <- Seurat::Read10X(data.dir = import_set_path[1])
-
+  
   # assign to secondary matrix
   expression_matrix2 <- expression_matrix
-
+  
   # import gene and ensembl names
   load.success <- F
   try({
-    feature.names = read.delim(paste(import_set_path[1], "/genes.tsv", sep = ""),
+    feature_path = paste0(import_set_path[1], "/genes.tsv")
+    if (!file.exists(feature_path)) { # if not exists, it may be a gzip file
+      feature_path = paste0(feature_path, ".gz")
+    }
+    feature.names = read.delim(feature_path,
                                header = FALSE,
                                stringsAsFactors = FALSE)
     load.success <- T
   }, silent = T)
   if (!load.success){
-    feature.names = read.delim(paste(import_set_path[1], "/features.tsv", sep = ""),
+    feature_path = paste0(import_set_path[1], "/features.tsv")
+    if (!file.exists(feature_path)) { # if not exists, it may be a gzip file
+      feature_path = paste0(feature_path, ".gz")
+    }
+    feature.names = read.delim(feature_path,
                                header = FALSE,
                                stringsAsFactors = FALSE)
   }
-
-
+  
+  
   # remove tags
   feature.names[,1] <- gsub("hg19_", "", feature.names[,1])
   feature.names[,2] <- gsub("hg19_", "", feature.names[,2])
   feature.names[,1] <- gsub("hg38_", "", feature.names[,1])
   feature.names[,2] <- gsub("hg38_", "", feature.names[,2])
-
-
+  
+  
   # create gene list
   gNames <- as.character( feature.names$V2 );
   names(gNames) <- as.character( feature.names$V1 );
   names(gNames) <-gsub("\\..*","",as.vector( names(gNames)))
-
+  
   # convert gene symbols to ensemble (in expression matrix)
   rownames(expression_matrix2) <- names(gNames)
-
+  
   # assign species
   orgs <- detectSpecies(expression_matrix2)
   # orgs <- scMiko::m1.inferSpecies(expression_matrix2, input_organisms)
-
+  
   # create seurat object
   # so = CreateSeuratObject(counts = expression_matrix2,project="cell_ranger",min.cells=3,min.features=200)
   so = CreateSeuratObject(counts = expression_matrix2,project="cell_ranger",min.cells=0,min.features=0)
-
+  
   # add gene symbols as meta data in seurat object
   mat_ens <- rownames(so@assays[["RNA"]])
   match.id <- match(mat_ens, names(gNames))
-
+  
   # Add gene symbols as meta data that we can use later
   so[["RNA"]] <- AddMetaData( object=so[["RNA"]],metadata=names(gNames[match.id]),col.name="ENSEMBL");
   so[["RNA"]] <- AddMetaData( object=so[["RNA"]],metadata=as.vector(gNames[match.id]),col.name="SYMBOL");
-
+  
   # Add in inferred organism
   so$Species <- orgs;
-
+  
   # Specify barcodes
   so$Barcode <- "unspecified";
-
+  
   output <- list(object = so, genes = gNames)
-
+  
   return(output)
 }
 
